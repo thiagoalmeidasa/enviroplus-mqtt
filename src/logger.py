@@ -1,11 +1,13 @@
 import collections
+import json
 import threading
 import traceback
-import json
-
 from subprocess import PIPE, Popen, check_output
 
 import paho.mqtt.client as mqtt
+import ST7735
+from fonts.ttf import RobotoMedium as UserFont
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     # Transitional fix for breaking change in LTR559
@@ -20,6 +22,7 @@ from pms5003 import PMS5003
 
 
 class EnvLogger:
+
     def __init__(self, client_id, host, port, username, password, prefix,
                  use_pms5003, room, num_samples):
         self.bme280 = BME280()
@@ -27,6 +30,7 @@ class EnvLogger:
         self.client_id = client_id
         self.prefix = prefix
         self.room = room
+        self.mqtt_broker = host
 
         self.connection_error = None
         self.client = mqtt.Client(client_id=client_id)
@@ -45,6 +49,14 @@ class EnvLogger:
                 target=self.__read_pms_continuously)
             self.pm_thread.daemon = True
             self.pm_thread.start()
+
+        # Create LCD instance
+        self.disp = ST7735.ST7735(port=0,
+                                  cs=1,
+                                  dc=9,
+                                  backlight=12,
+                                  rotation=270,
+                                  spi_speed_hz=10000000)
 
     def __on_connect(self, client, userdata, flags, rc):
         errors = {
@@ -71,12 +83,12 @@ class EnvLogger:
             try:
                 pm_data = pms.read()
                 self.latest_pms_readings = {
-                    "pm10":
-                    pm_data.pm_ug_per_m3(1.0), #, atmospheric_environment=True),
-                    "pm25":
-                    pm_data.pm_ug_per_m3(2.5), #, atmospheric_environment=True),
-                    "pm100":
-                    pm_data.pm_ug_per_m3(10), #, atmospheric_environment=True),
+                    "pm10": pm_data.pm_ug_per_m3(
+                        1.0),  #, atmospheric_environment=True),
+                    "pm25": pm_data.pm_ug_per_m3(
+                        2.5),  #, atmospheric_environment=True),
+                    "pm100": pm_data.pm_ug_per_m3(
+                        10),  #, atmospheric_environment=True),
                 }
             except:
                 print("Failed to read from PMS5003. Resetting sensor.")
@@ -101,7 +113,6 @@ class EnvLogger:
             "pm25",
             "pm100",
         ]
-
 
         for sensor in sensors:
             sensor_topic_config = f"sensor/{self.room}/{sensor}/config"
@@ -179,7 +190,8 @@ class EnvLogger:
         try:
             for sensor in sensors:
                 sensors[sensor]["name"] = f"{self.room} {sensor.capitalize()}"
-                sensors[sensor]["state_topic"] = f"{self.prefix}/sensor/{self.room}/{sensor}/state"
+                sensors[sensor][
+                    "state_topic"] = f"{self.prefix}/sensor/{self.room}/{sensor}/state"
                 sensors[sensor]["unique_id"] = f"{sensor}-{self.client_id}"
 
                 sensor_topic_config = f"sensor/{self.room}/{sensor}/config"
@@ -191,11 +203,11 @@ class EnvLogger:
 
     # Get CPU temperature to use for compensation
     def get_cpu_temperature(self):
-        process = Popen(
-            ["vcgencmd", "measure_temp"], stdout=PIPE, universal_newlines=True
-        )
+        process = Popen(["vcgencmd", "measure_temp"],
+                        stdout=PIPE,
+                        universal_newlines=True)
         output, _error = process.communicate()
-        return float(output[output.index("=") + 1 : output.rindex("'")])
+        return float(output[output.index("=") + 1:output.rindex("'")])
 
     def take_readings(self):
         # Tuning factor for compensation. Decrease this number to adjust the
@@ -212,8 +224,10 @@ class EnvLogger:
             "proximity": ltr559.get_proximity(),
             "lux": int(ltr559.get_lux()),
             "temperature": round(comp_temp, 1),
-            "pressure": round(int(self.bme280.get_pressure()  * 100), -1),  # round to nearest 10
-            "humidity": round(int(self.bme280.get_humidity() * hum_comp_factor), 1),
+            "pressure": round(int(self.bme280.get_pressure() * 100),
+                              -1),  # round to nearest 10
+            "humidity":
+            round(int(self.bme280.get_humidity() * hum_comp_factor), 1),
             "oxidising": int(gas_data.oxidising / 1000),
             "reducing": int(gas_data.reducing / 1000),
             "nh3": int(gas_data.nh3 / 1000),
@@ -223,22 +237,59 @@ class EnvLogger:
 
         return readings
 
-
     def publish(self, topic, value):
         topic = self.prefix.strip("/") + "/" + topic
         self.client.publish(topic, str(value))
 
-
     def update(self, publish_readings=True):
-        self.samples.append(self.take_readings())
+        readings = self.take_readings()
+        self.samples.append(readings)
         if publish_readings:
+
+            display_status(self.disp, self.mqtt_broker, readings)
             for topic in self.samples[0].keys():
                 value_sum = sum([d[topic] for d in self.samples])
                 value_avg = round(value_sum / len(self.samples), 1)
                 #print(topic, value_avg)
                 self.publish(f"sensor/{self.room}/{topic}/state", value_avg)
 
-
     def destroy(self):
         self.client.disconnect()
         self.client.loop_stop()
+
+
+# Check for Wi-Fi connection
+def wifi_status():
+    try:
+        output = check_output(['iwgetid', '-s'], text=True).rstrip()
+        return output
+    except Exception:
+        return False
+
+
+def display_status(disp, mqtt_broker, readings):
+
+    wifi_ssid = wifi_status() if wifi_status() else "disconnected"
+
+    # Width and height to calculate text position
+    WIDTH = disp.width
+    HEIGHT = disp.height
+
+    # Text settings
+    font_size = 12
+    font = ImageFont.truetype(UserFont, font_size)
+
+    text_colour = (255, 255, 255)
+    back_colour = (85, 15, 15) if wifi_ssid == "disconnected" else (0, 170,
+                                                                    170)
+
+    message = f"Wi-Fi: {wifi_ssid}\nMQTT: {mqtt_broker}\nHumidity: {readings['humidity']}"
+
+    img = Image.new("RGB", (WIDTH, HEIGHT), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    size_x, size_y = draw.textsize(message, font)
+    x = (WIDTH - size_x) / 2
+    y = (HEIGHT / 2) - (size_y / 2)
+    draw.rectangle((0, 0, 160, 80), back_colour)
+    draw.text((x, y), message, font=font, fill=text_colour)
+    disp.display(img)

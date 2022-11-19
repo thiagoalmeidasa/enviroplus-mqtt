@@ -1,11 +1,6 @@
 import argparse
 import sys
 import time
-from subprocess import check_output
-
-import ST7735
-from fonts.ttf import RobotoMedium as UserFont
-from PIL import Image, ImageDraw, ImageFont
 
 from logger import EnvLogger
 
@@ -88,15 +83,6 @@ def main():
                        use_pms5003=args["use_pms5003"],
                        num_samples=args["interval"])
 
-    # Create LCD instance
-    disp = ST7735.ST7735(port=0,
-                         cs=1,
-                         dc=9,
-                         backlight=12,
-                         rotation=270,
-                         spi_speed_hz=10000000)
-
-
     if args["remove_config"]:
         logger.remove_sensor_config()
         logger.destroy()
@@ -119,8 +105,6 @@ def main():
                 f"Connecting to the MQTT server failed: {logger.connection_error}"
             )
 
-        display_status(disp, args["host"])
-
         should_publish = time.time() >= next_publish_time
         if should_publish:
             next_publish_time += args["interval"]
@@ -134,43 +118,5 @@ def main():
     logger.destroy()
 
 
-# Check for Wi-Fi connection
-def wifi_status():
-    try:
-        output = check_output(['iwgetid', '-s']).rstrip()
-        return output
-    except Exception:
-        return False
-
-def display_status(disp, mqtt_broker):
-
-    wifi_ssid = wifi_status() if wifi_status() else "disconnected"
-
-    # Width and height to calculate text position
-    WIDTH = disp.width
-    HEIGHT = disp.height
-
-    # Text settings
-    font_size = 12
-    font = ImageFont.truetype(UserFont, font_size)
-
-    device_serial_number = get_serial_number()
-
-    text_colour = (255, 255, 255)
-    back_colour = (85, 15, 15) if wifi_ssid == "disconnected" else (0, 170, 170)
-
-    message = f"Wi-Fi: {wifi_ssid}\nMQTT: {mqtt_broker}"
-
-
-    img = Image.new("RGB", (WIDTH, HEIGHT), color=(0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    size_x, size_y = draw.textsize(message, font)
-    x = (WIDTH - size_x) / 2
-    y = (HEIGHT / 2) - (size_y / 2)
-    draw.rectangle((0, 0, 160, 80), back_colour)
-    draw.text((x, y), message, font=font, fill=text_colour)
-    disp.display(img)
-
 if __name__ == "__main__":
     main()
-
