@@ -150,7 +150,7 @@ class EnvLogger:
             },
             "humidity": {
                 "device_class": "humidity",
-                "unit_of_measurement": "%H",
+                "unit_of_measurement": "%",
                 "value_template": "{{ value_json }}",
                 "icon": "mdi:water-percent"
             },
