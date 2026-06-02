@@ -11,26 +11,37 @@
 
        sudo git clone https://github.com/hotplot/enviroplus-mqtt /usr/src/enviroplus-mqtt
 
-5) Add a new file at `/etc/systemd/system/envlogger.service` with the following content:
+5) Install the package and its hardware extras. Either with `uv`:
+
+       cd /usr/src/enviroplus-mqtt
+       sudo uv sync --extra device
+
+   or with `pipx` (uses the apt-installed hardware libs):
+
+       sudo pipx install --system-site-packages /usr/src/enviroplus-mqtt
+
+   Both produce an `enviroplus2mqtt` console script.
+
+6) Add a new file at `/etc/systemd/system/envlogger.service` with the following content:
 
        [Unit]
        Description=Enviro+ MQTT Logger
        After=network.target
-   
+
        [Service]
-       ExecStart=/usr/bin/python3 /usr/src/enviroplus-mqtt/src/main.py <arguments>
+       ExecStart=/usr/src/enviroplus-mqtt/.venv/bin/enviroplus2mqtt <arguments>
        WorkingDirectory=/usr/src/enviroplus-mqtt
        StandardOutput=inherit
        StandardError=inherit
        Restart=always
        User=pi
-   
+
        [Install]
        WantedBy=multi-user.target
-       
-   **Note that you must replace `<arguments>` with flags appropriate to your MQTT server.**
 
-6) Enable and start the service:
+   **Note that you must replace `<arguments>` with flags appropriate to your MQTT server.** If you installed via `pipx`, use `/root/.local/bin/enviroplus2mqtt` (or wherever `pipx list` reports the binary) in place of the `.venv` path.
+
+7) Enable and start the service:
 
        sudo systemctl enable envlogger.service
        sudo systemctl start envlogger.service
@@ -42,7 +53,7 @@
 - The initial delay before publishing readings can be specified, and defaults to 15 seconds.
 - If you are using a PMS5003 sensor, enable it by passing the `--use-pms5003` flag.
 
-        usage: main.py -h HOST [-p PORT] [-U USERNAME] [-P PASSWORD] [--prefix PREFIX]
+        usage: enviroplus2mqtt -h HOST [-p PORT] [-U USERNAME] [-P PASSWORD] [--prefix PREFIX]
                     [--client-id CLIENT_ID] [--interval INTERVAL] [--delay DELAY]
                     [--use-pms5003] [--help]
 

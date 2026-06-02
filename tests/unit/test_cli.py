@@ -1,26 +1,26 @@
 import pytest
 
-import main
+from enviroplus_mqtt import cli
 
 
 @pytest.fixture(autouse=True)
 def stub_serial(monkeypatch):
-    monkeypatch.setattr(main, "get_serial_number", lambda: "FAKE-SERIAL")
+    monkeypatch.setattr("enviroplus_mqtt.cli.get_serial_number", lambda: "FAKE-SERIAL")
 
 
 def _set_argv(monkeypatch, *args):
-    monkeypatch.setattr("sys.argv", ["main.py", *args])
+    monkeypatch.setattr("sys.argv", ["enviroplus2mqtt", *args])
 
 
 def test_host_is_required(monkeypatch):
     _set_argv(monkeypatch)
     with pytest.raises(SystemExit):
-        main.parse_args()
+        cli.parse_args()
 
 
 def test_defaults(monkeypatch):
     _set_argv(monkeypatch, "--host", "broker.local")
-    args = main.parse_args()
+    args = cli.parse_args()
     assert args == {
         "host": "broker.local",
         "port": 1883,
@@ -48,7 +48,7 @@ def test_numeric_flags_coerce_to_int(monkeypatch):
         "--delay",
         "30",
     )
-    args = main.parse_args()
+    args = cli.parse_args()
     assert args["port"] == 8883
     assert args["interval"] == 10
     assert args["delay"] == 30
@@ -73,7 +73,7 @@ def test_string_flags_pass_through(monkeypatch):
         "--client-id",
         "custom-id",
     )
-    args = main.parse_args()
+    args = cli.parse_args()
     assert args["username"] == "user"
     assert args["password"] == "pw"
     assert args["prefix"] == "home/lounge"
@@ -89,6 +89,6 @@ def test_store_true_flags(monkeypatch):
         "--use-pms5003",
         "--remove-config",
     )
-    args = main.parse_args()
+    args = cli.parse_args()
     assert args["use_pms5003"] is True
     assert args["remove_config"] is True

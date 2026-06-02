@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from logger import EnvLogger
+from enviroplus_mqtt.mqtt_logger import EnvLogger
 
 BASE_SENSORS = {
     "proximity",
@@ -49,7 +49,6 @@ def test_publishes_one_config_per_sensor(use_pms5003):
     expected = BASE_SENSORS | (PM_SENSORS if use_pms5003 else set())
     actual_sensors = set()
     for topic, _ in _published(env):
-        # publish() prepends the stripped prefix + "/" — strip both halves.
         assert topic.startswith("home/sensor/Lounge/")
         sensor = topic.removeprefix("home/sensor/Lounge/").removesuffix("/config")
         actual_sensors.add(sensor)

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from logger import EnvLogger
+from enviroplus_mqtt.mqtt_logger import EnvLogger
 
 
 def _make_logger(prefix: str) -> tuple[EnvLogger, MagicMock]:
