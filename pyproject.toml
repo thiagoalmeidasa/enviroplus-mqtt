@@ -1,0 +1,53 @@
+[project]
+name = "enviroplus-mqtt"
+version = "0.2.0"
+description = "Publish Enviro+ sensor readings to MQTT with Home Assistant discovery."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "paho-mqtt",
+]
+
+[project.optional-dependencies]
+# Hardware-only dependencies. Installed on the Raspberry Pi with
+# `uv sync --extra device`. Omitted from the default install so that
+# `uv sync` succeeds on macOS / CI without trying to build wheels for
+# RPi.GPIO and friends.
+device = [
+    "enviroplus",
+    "bme280",
+    "ltr559",
+    "pms5003",
+    "st7735",
+    "fonts",
+    "font-roboto",
+    "Pillow",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-mock>=3.12",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["main", "logger"]
