@@ -58,7 +58,7 @@ class EnvLogger:
                                   rotation=270,
                                   spi_speed_hz=10000000)
 
-    def __on_connect(self, client, userdata, flags, rc):
+    def __on_connect(self, _client, _userdata, _flags, rc):
         errors = {
             1: "incorrect MQTT protocol version",
             2: "invalid MQTT client identifier",
@@ -90,7 +90,7 @@ class EnvLogger:
                     "pm100": pm_data.pm_ug_per_m3(
                         10),  #, atmospheric_environment=True),
                 }
-            except:
+            except Exception:
                 print("Failed to read from PMS5003. Resetting sensor.")
                 traceback.print_exc()
                 pms.reset()
@@ -197,7 +197,7 @@ class EnvLogger:
                 sensor_topic_config = f"sensor/{self.room}/{sensor}/config"
                 self.publish(sensor_topic_config, json.dumps(sensors[sensor]))
             print("Configs added")
-        except:
+        except Exception:
             print("Failed to add configs.")
             traceback.print_exc()
 
@@ -206,7 +206,7 @@ class EnvLogger:
         process = Popen(["vcgencmd", "measure_temp"],
                         stdout=PIPE,
                         universal_newlines=True)
-        output, _error = process.communicate()
+        output, _ = process.communicate()
         return float(output[output.index("=") + 1:output.rindex("'")])
 
     def take_readings(self):
@@ -247,7 +247,7 @@ class EnvLogger:
         if publish_readings:
 
             display_status(self.disp, self.mqtt_broker, readings)
-            for topic in self.samples[0].keys():
+            for topic in self.samples[0]:
                 value_sum = sum([d[topic] for d in self.samples])
                 value_avg = round(value_sum / len(self.samples), 1)
                 #print(topic, value_avg)

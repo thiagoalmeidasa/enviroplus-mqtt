@@ -7,7 +7,7 @@ from logger import EnvLogger
 
 # Get Raspberry Pi serial number to use as ID
 def get_serial_number():
-    with open("/proc/cpuinfo", "r") as f:
+    with open("/proc/cpuinfo") as f:
         for line in f:
             if line[0:6] == "Serial":
                 return line.split(":")[1].strip()

@@ -22,10 +22,11 @@ _register("bme280", BME280=MagicMock())
 # expose at least get_proximity / get_lux for any later call paths.
 _register("ltr559", LTR559=MagicMock(return_value=MagicMock()))
 
-# enviroplus.gas: `from enviroplus import gas`.
-_register("enviroplus")
-_register("enviroplus.gas", read_all=MagicMock())
-sys.modules["enviroplus"].gas = sys.modules["enviroplus.gas"]
+# enviroplus.gas: `from enviroplus import gas`. Register the submodule
+# first so it can be attached as a kwarg on the parent — that wires up
+# both `import enviroplus.gas` and `from enviroplus import gas`.
+_gas = _register("enviroplus.gas", read_all=MagicMock())
+_register("enviroplus", gas=_gas)
 
 # pms5003: `from pms5003 import PMS5003`.
 _register("pms5003", PMS5003=MagicMock())
@@ -34,9 +35,8 @@ _register("pms5003", PMS5003=MagicMock())
 _register("ST7735", ST7735=MagicMock())
 
 # fonts.ttf: `from fonts.ttf import RobotoMedium`.
-_register("fonts")
-_register("fonts.ttf", RobotoMedium=MagicMock())
-sys.modules["fonts"].ttf = sys.modules["fonts.ttf"]
+_ttf = _register("fonts.ttf", RobotoMedium=MagicMock())
+_register("fonts", ttf=_ttf)
 
 # PIL: `from PIL import Image, ImageDraw, ImageFont`. Pillow isn't a
 # default dependency on macOS (it sits in the `device` extra), so stub it.
