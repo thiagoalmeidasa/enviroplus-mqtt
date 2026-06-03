@@ -1,5 +1,5 @@
 from io import StringIO
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, TimeoutExpired
 
 from enviroplus_mqtt import system
 
@@ -40,17 +40,25 @@ def test_wifi_returns_empty_string_when_no_ssid(monkeypatch):
     assert system.wifi_status() == ""
 
 
-def test_wifi_returns_false_when_subprocess_fails(monkeypatch):
+def test_wifi_returns_none_when_subprocess_fails(monkeypatch):
     def boom(*_a, **_kw):
-        raise CalledProcessError(1, ["iwgetid", "-s"])
+        raise CalledProcessError(1, ["iwgetid", "-r"])
 
     monkeypatch.setattr(system, "check_output", boom)
-    assert system.wifi_status() is False
+    assert system.wifi_status() is None
 
 
-def test_wifi_returns_false_when_iwgetid_missing(monkeypatch):
+def test_wifi_returns_none_when_iwgetid_missing(monkeypatch):
     def boom(*_a, **_kw):
         raise FileNotFoundError("iwgetid")
 
     monkeypatch.setattr(system, "check_output", boom)
-    assert system.wifi_status() is False
+    assert system.wifi_status() is None
+
+
+def test_wifi_returns_none_when_iwgetid_times_out(monkeypatch):
+    def boom(*_a, **_kw):
+        raise TimeoutExpired(["iwgetid", "-r"], 2)
+
+    monkeypatch.setattr(system, "check_output", boom)
+    assert system.wifi_status() is None

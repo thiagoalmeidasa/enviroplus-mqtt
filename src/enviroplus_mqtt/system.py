@@ -1,4 +1,4 @@
-from subprocess import check_output
+from subprocess import CalledProcessError, TimeoutExpired, check_output
 
 
 def get_serial_number() -> str | None:
@@ -10,9 +10,9 @@ def get_serial_number() -> str | None:
     return None
 
 
-def wifi_status():
-    """Return the current Wi-Fi SSID, or False if iwgetid is unavailable / fails."""
+def wifi_status() -> str | None:
+    """Return the current Wi-Fi SSID, or None if iwgetid is unavailable / fails."""
     try:
-        return check_output(["iwgetid", "-s"], text=True).rstrip()
-    except Exception:
-        return False
+        return check_output(["iwgetid", "-r"], text=True, timeout=2).rstrip()
+    except (FileNotFoundError, CalledProcessError, TimeoutExpired):
+        return None
