@@ -8,18 +8,12 @@ from enviroplus_mqtt.system import get_serial_number
 
 def parse_args() -> dict:
     ap = argparse.ArgumentParser(add_help=False)
-    ap.add_argument(
-        "-h", "--host", required=True, help="the MQTT host to connect to"
-    )
+    ap.add_argument("-h", "--host", required=True, help="the MQTT host to connect to")
     ap.add_argument(
         "-p", "--port", type=int, default=1883, help="the port on the MQTT host to connect to"
     )
-    ap.add_argument(
-        "-U", "--username", default=None, help="the MQTT username to connect with"
-    )
-    ap.add_argument(
-        "-P", "--password", default=None, help="the password to connect with"
-    )
+    ap.add_argument("-U", "--username", default=None, help="the MQTT username to connect with")
+    ap.add_argument("-P", "--password", default=None, help="the password to connect with")
     ap.add_argument(
         "--prefix",
         default="",
@@ -52,9 +46,7 @@ def parse_args() -> dict:
         action="store_true",
         help="if set, will remove config topics",
     )
-    ap.add_argument(
-        "--help", action="help", help="print this help message and exit"
-    )
+    ap.add_argument("--help", action="help", help="print this help message and exit")
     return vars(ap.parse_args())
 
 

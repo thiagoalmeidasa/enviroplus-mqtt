@@ -83,12 +83,8 @@ def test_sensor_keys_constant_matches_full_set():
 
 def test_payload_dicts_are_independent_between_calls():
     """Mutating one returned payload must not leak into a later call."""
-    first = build_sensor_configs(
-        room="A", prefix="p", client_id="c1", use_pms5003=False
-    )
+    first = build_sensor_configs(room="A", prefix="p", client_id="c1", use_pms5003=False)
     first["humidity"]["unit_of_measurement"] = "MUTATED"
 
-    second = build_sensor_configs(
-        room="A", prefix="p", client_id="c2", use_pms5003=False
-    )
+    second = build_sensor_configs(room="A", prefix="p", client_id="c2", use_pms5003=False)
     assert second["humidity"]["unit_of_measurement"] == "%"

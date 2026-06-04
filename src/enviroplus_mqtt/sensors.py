@@ -9,6 +9,7 @@ from pms5003 import PMS5003
 try:
     # Newer LTR559 ships a class; older versions exposed a module-level API
     from ltr559 import LTR559
+
     ltr559 = LTR559()
 except ImportError:
     import ltr559  # type: ignore[no-redef]
