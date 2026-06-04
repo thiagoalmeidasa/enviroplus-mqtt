@@ -1,0 +1,110 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "enviroplus-mqtt"
+version = "0.2.0"
+description = "Publish Enviro+ sensor readings to MQTT with Home Assistant discovery."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "paho-mqtt",
+]
+
+[project.scripts]
+enviroplus2mqtt = "enviroplus_mqtt.cli:main"
+
+[project.optional-dependencies]
+# Hardware-only dependencies. Installed on the Raspberry Pi with
+# `uv sync --extra device`. Omitted from the default install so that
+# `uv sync` succeeds on macOS / CI without trying to build wheels for
+# RPi.GPIO and friends.
+device = [
+    "enviroplus",
+    "bme280",
+    "ltr559",
+    "pms5003",
+    "st7735",
+    "fonts",
+    "font-roboto",
+    "Pillow",
+    "sdbus",
+    "sdbus-networkmanager",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-mock>=3.12",
+    "pyright>=1.1.380",
+    "mypy>=1.10",
+    "ruff>=0.6",
+    "pre-commit>=3.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/enviroplus_mqtt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["enviroplus_mqtt"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.10"
+# Point pyright at the UV-managed venv so it sees installed third-party
+# packages (paho-mqtt, pytest, etc.). pyright also auto-discovers
+# `.venv/`, but being explicit avoids surprises across editors / CI.
+venvPath = "."
+venv = ".venv"
+# Hardware modules (bme280, ltr559, enviroplus, pms5003, ST7735, fonts,
+# PIL) live in the `device` extra and aren't installed on dev machines;
+# at runtime they're stubbed by tests/conftest.py. Silencing the missing
+# import noise keeps the type-check signal useful.
+reportMissingImports = "none"
+reportMissingModuleSource = "none"
+typeCheckingMode = "basic"
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src", "tests"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+# Hardware extras aren't installed on dev machines; conftest.py stubs them
+# at test time. Silence missing-import errors for those modules so the
+# mypy signal stays useful.
+[[tool.mypy.overrides]]
+module = [
+    "bme280",
+    "ltr559",
+    "enviroplus",
+    "pms5003",
+    "ST7735",
+    "fonts.ttf",
+    "PIL",
+    "paho.mqtt.client",
+    "sdbus",
+    "sdbus_block.networkmanager",
+]
+ignore_missing_imports = true
