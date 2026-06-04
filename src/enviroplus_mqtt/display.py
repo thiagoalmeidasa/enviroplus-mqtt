@@ -26,11 +26,7 @@ class Display:
         text_colour = (255, 255, 255)
         back_colour = (85, 15, 15) if wifi_label == "disconnected" else (0, 170, 170)
 
-        message = (
-            f"Wi-Fi: {wifi_label}\n"
-            f"MQTT: {mqtt_broker}\n"
-            f"Humidity: {readings['humidity']}"
-        )
+        message = f"Wi-Fi: {wifi_label}\nMQTT: {mqtt_broker}\nHumidity: {readings['humidity']}"
 
         img = Image.new("RGB", (width, height), color=(0, 0, 0))
         draw = ImageDraw.Draw(img)
