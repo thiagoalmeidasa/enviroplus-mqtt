@@ -212,6 +212,8 @@ device = [
     { name = "ltr559" },
     { name = "pillow" },
     { name = "pms5003" },
+    { name = "sdbus" },
+    { name = "sdbus-networkmanager" },
     { name = "st7735" },
 ]
 
@@ -234,6 +236,8 @@ requires-dist = [
     { name = "paho-mqtt" },
     { name = "pillow", marker = "extra == 'device'" },
     { name = "pms5003", marker = "extra == 'device'" },
+    { name = "sdbus", marker = "extra == 'device'" },
+    { name = "sdbus-networkmanager", marker = "extra == 'device'" },
     { name = "st7735", marker = "extra == 'device'" },
 ]
 provides-extras = ["device"]
@@ -919,6 +923,29 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/c0/1003b60edd697c649faf61f1a34094b1abb38fb3d1181e3f895781250a08/ruff-0.15.15-py3-none-win32.whl", hash = "sha256:29428ea79694afbe756d45fd59b36f22b6b020dc0443cf7de0173046236964b9", size = 10716774, upload-time = "2026-05-28T14:16:52.337Z" },
     { url = "https://files.pythonhosted.org/packages/02/a8/1269eddd6945a06c23f055ef7848886e37cf9d6a8bebb386a3115f01470c/ruff-0.15.15-py3-none-win_amd64.whl", hash = "sha256:8df0323902e15e24bc4bf246da830573d3cf3352bd0b9a164eab335d111ff4a4", size = 11868463, upload-time = "2026-05-28T14:16:11.333Z" },
     { url = "https://files.pythonhosted.org/packages/4e/b2/920464c907b191e37469d477a1aa8bc048b8f36c4c1610dfa4ab87b39e18/ruff-0.15.15-py3-none-win_arm64.whl", hash = "sha256:3c8ceca6792f38196b8f589bc92eccd03eef286602da92e5dc05cc42ef6441b7", size = 11138498, upload-time = "2026-05-28T14:16:38.425Z" },
+]
+
+[[package]]
+name = "sdbus"
+version = "0.14.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/0f/0cf6b2fb0338fb3ab564cb8a8d68aa1c6de767851f5f9de9a3c83dbabeab/sdbus-0.14.2.tar.gz", hash = "sha256:4f5d13b196e1e1de35311ebb2563a32de791451a30f5b9a4894528ba98766412", size = 89923, upload-time = "2025-12-21T20:22:32.683Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/e0/43d2c3e0cc6f6c345df5f3230e2a9c62bd8ae8608d401f582ccf943da14d/sdbus-0.14.2-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fbed8db91668ad537089c42a71d30e2472faa2e6616a461441ab0d51344a461c", size = 769099, upload-time = "2025-12-21T20:22:27.773Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/0b/043869e8e53fe267b0fc9a98688f8ec9131ae2761a1665ee7c553b67ba69/sdbus-0.14.2-cp39-abi3-manylinux_2_28_armv7l.whl", hash = "sha256:019871c00d9c2eeb5b40c3f3c94ff1d6579a49e245d6ecaf3bd9e245c4b248bc", size = 698023, upload-time = "2025-12-21T20:22:29.518Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/f8/416467419d3345763372aaa51ef389fc95d0bd210679561edb63daa49933/sdbus-0.14.2-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:8a64bbb6280104efeb24a9632a9ebd5504e9c9c1349594142bbe50e734f16c83", size = 742236, upload-time = "2025-12-21T20:22:31.207Z" },
+]
+
+[[package]]
+name = "sdbus-networkmanager"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sdbus" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/31/ab/e864c6c2eb778c194cfb56cd9d98b5594dc00573210fdf6b44904745a0bf/sdbus-networkmanager-2.0.0.tar.gz", hash = "sha256:3572ac3a8189c683ec0416acb148761773a8f0881ad3d78b6d6f6864eff9c50b", size = 165071, upload-time = "2023-06-04T10:50:16.09Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/0c/6a67ebd967f3816022d04ab93db5f3d998a55d79c138af11feb1f59a6f10/sdbus_networkmanager-2.0.0-py3-none-any.whl", hash = "sha256:710a5ccfb1c3267016c990023ca76ad6210b13ab63aa5dad3a20e590b291b08f", size = 248349, upload-time = "2023-06-04T10:50:13.355Z" },
 ]
 
 [[package]]

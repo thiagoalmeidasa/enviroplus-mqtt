@@ -1,5 +1,4 @@
 from io import StringIO
-from subprocess import CalledProcessError, TimeoutExpired
 
 from enviroplus_mqtt import system
 
@@ -30,35 +29,19 @@ def test_serial_returns_none_when_missing(monkeypatch):
     assert system.get_serial_number() is None
 
 
-def test_wifi_returns_ssid_stripped(monkeypatch):
-    monkeypatch.setattr(system, "check_output", lambda *_a, **_kw: "MyNetwork\n")
+def test_wifi_returns_ssid_from_query(monkeypatch):
+    monkeypatch.setattr(system, "_query_active_ssid", lambda: "MyNetwork")
     assert system.wifi_status() == "MyNetwork"
 
 
-def test_wifi_returns_empty_string_when_no_ssid(monkeypatch):
-    monkeypatch.setattr(system, "check_output", lambda *_a, **_kw: "\n")
-    assert system.wifi_status() == ""
-
-
-def test_wifi_returns_none_when_subprocess_fails(monkeypatch):
-    def boom(*_a, **_kw):
-        raise CalledProcessError(1, ["iwgetid", "-r"])
-
-    monkeypatch.setattr(system, "check_output", boom)
+def test_wifi_returns_none_when_no_active_wifi(monkeypatch):
+    monkeypatch.setattr(system, "_query_active_ssid", lambda: None)
     assert system.wifi_status() is None
 
 
-def test_wifi_returns_none_when_iwgetid_missing(monkeypatch):
-    def boom(*_a, **_kw):
-        raise FileNotFoundError("iwgetid")
+def test_wifi_returns_none_when_query_raises(monkeypatch):
+    def boom():
+        raise RuntimeError("dbus exploded")
 
-    monkeypatch.setattr(system, "check_output", boom)
-    assert system.wifi_status() is None
-
-
-def test_wifi_returns_none_when_iwgetid_times_out(monkeypatch):
-    def boom(*_a, **_kw):
-        raise TimeoutExpired(["iwgetid", "-r"], 2)
-
-    monkeypatch.setattr(system, "check_output", boom)
+    monkeypatch.setattr(system, "_query_active_ssid", boom)
     assert system.wifi_status() is None

@@ -22,6 +22,11 @@
 
    Both produce an `enviroplus2mqtt` console script.
 
+   If the install fails while building `sdbus` (NetworkManager bindings,
+   used by the LCD wifi status), install the headers first:
+   `sudo apt install libsystemd-dev`. Prebuilt wheels exist for common
+   architectures so this is usually not needed.
+
 6) Add a new file at `/etc/systemd/system/envlogger.service` with the following content:
 
        [Unit]

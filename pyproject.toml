@@ -30,6 +30,8 @@ device = [
     "fonts",
     "font-roboto",
     "Pillow",
+    "sdbus",
+    "sdbus-networkmanager",
 ]
 
 [dependency-groups]
@@ -101,5 +103,7 @@ module = [
     "fonts.ttf",
     "PIL",
     "paho.mqtt.client",
+    "sdbus",
+    "sdbus_block.networkmanager",
 ]
 ignore_missing_imports = true
