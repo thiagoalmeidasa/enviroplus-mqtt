@@ -1,0 +1,17 @@
+# /etc/enviroplus-mqtt/config.toml
+#
+# Required: host. Restart the service after editing:
+#   sudo systemctl restart enviroplus-mqtt
+
+host = "CHANGE-ME"
+port = 1883
+# username = "sensor"
+# password = "..."
+
+prefix = "enviroplus"
+room = "LivingRoom"
+# client_id defaults to the Pi's serial number
+
+interval = 5
+delay = 15
+use_pms5003 = false

@@ -1,0 +1,120 @@
+name: Release deb
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: "Override version (without leading v)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-deb-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build deb (${{ matrix.suite }}/${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: bookworm
+            arch: arm64
+            platform: linux/arm64
+            image: debian:bookworm-slim
+          - suite: bookworm
+            arch: armhf
+            platform: linux/arm/v7
+            image: debian:bookworm-slim
+          - suite: noble
+            arch: arm64
+            platform: linux/arm64
+            image: ubuntu:24.04
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Derive version
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version_override }}" ]; then
+            VERSION="${{ inputs.version_override }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "deb_version=${VERSION}-1~${{ matrix.suite }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+        with:
+          platforms: arm64,arm
+
+      - name: Build .deb inside ${{ matrix.image }}
+        env:
+          DEB_VERSION: ${{ steps.ver.outputs.deb_version }}
+          SUITE: ${{ matrix.suite }}
+        run: |
+          mkdir -p out
+          docker run --rm \
+            --platform ${{ matrix.platform }} \
+            -v "${PWD}:/src:ro" \
+            -v "${PWD}/out:/out" \
+            -e DEB_VERSION \
+            -e SUITE \
+            -e DEBIAN_FRONTEND=noninteractive \
+            ${{ matrix.image }} \
+            bash -euxo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                  build-essential devscripts equivs fakeroot \
+                  ca-certificates git dpkg-dev
+              cp -a /src /work
+              cd /work
+              dch -v "${DEB_VERSION}" -D "${SUITE}" --force-distribution \
+                  "Automated build of ${DEB_VERSION}"
+              mk-build-deps --install --remove --tool \
+                  "apt-get -y --no-install-recommends" debian/control
+              dpkg-buildpackage -us -uc -b
+              cp ../enviroplus-mqtt_*.deb /out/
+              cp ../enviroplus-mqtt_*.buildinfo /out/ || true
+              cp ../enviroplus-mqtt_*.changes /out/ || true
+            '
+
+      - name: Rename artifacts
+        run: |
+          cd out
+          for f in enviroplus-mqtt_*.deb; do
+            mv "$f" "enviroplus-mqtt_${{ steps.ver.outputs.deb_version }}_${{ matrix.suite }}_${{ matrix.arch }}.deb"
+          done
+          ls -la
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deb-${{ matrix.suite }}-${{ matrix.arch }}
+          path: out/*.deb
+          if-no-files-found: error
+
+  release:
+    name: Attach to GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" artifacts/*.deb --clobber

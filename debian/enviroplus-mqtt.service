@@ -1,0 +1,22 @@
+[Unit]
+Description=Enviro+ MQTT Logger
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/venvs/enviroplus-mqtt/bin/enviroplus2mqtt --config /etc/enviroplus-mqtt/config.toml
+Restart=on-failure
+RestartSec=5
+User=enviroplus-mqtt
+SupplementaryGroups=i2c spi gpio dialout
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

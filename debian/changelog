@@ -1,0 +1,7 @@
+enviroplus-mqtt (0.2.0-1) UNRELEASED; urgency=medium
+
+  * Initial Debian packaging via dh-virtualenv.
+  * Configuration moved to /etc/enviroplus-mqtt/config.toml.
+  * Service runs as dedicated enviroplus-mqtt system user.
+
+ -- Thiago Almeida <thiago@serverpod.dev>  Fri, 05 Jun 2026 00:00:00 +0000
