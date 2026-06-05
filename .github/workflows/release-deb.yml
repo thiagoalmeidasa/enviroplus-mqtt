@@ -60,6 +60,8 @@ jobs:
         with:
           platforms: arm64,arm
 
+      - uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
       - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
@@ -67,43 +69,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build .deb
-        env:
-          DEB_VERSION: ${{ steps.ver.outputs.deb_version }}
-          SUITE: ${{ matrix.suite }}
-          BUILDER_IMAGE: ghcr.io/${{ github.repository_owner }}/enviroplus-mqtt-builder:${{ matrix.suite }}-${{ matrix.arch }}
-        run: |
-          mkdir -p out
-          docker run --rm \
-            --platform ${{ matrix.platform }} \
-            -v "${PWD}:/src:ro" \
-            -v "${PWD}/out:/out" \
-            -e DEB_VERSION \
-            -e SUITE \
-            -e DEBIAN_FRONTEND=noninteractive \
-            "${BUILDER_IMAGE}" \
-            bash -euxo pipefail -c '
-              cp -a /src /work
-              cd /work
-              dch -v "${DEB_VERSION}" -D "${SUITE}" --force-distribution \
-                  "Automated build of ${DEB_VERSION}"
-              # Safety belt: install any Build-Deps drifted from the builder image.
-              mk-build-deps --install --remove --tool \
-                  "apt-get -y --no-install-recommends" debian/control || \
-                  { apt-get update && mk-build-deps --install --remove --tool \
-                    "apt-get -y --no-install-recommends" debian/control; }
-              dpkg-buildpackage -us -uc -b
-              cp ../enviroplus-mqtt_*.deb /out/
-              cp ../enviroplus-mqtt_*.buildinfo /out/ || true
-              cp ../enviroplus-mqtt_*.changes /out/ || true
-            '
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
+        with:
+          context: .
+          file: packaging/build.Dockerfile
+          platforms: ${{ matrix.platform }}
+          target: deb
+          build-args: |
+            BUILDER_IMAGE=ghcr.io/${{ github.repository_owner }}/enviroplus-mqtt-builder:${{ matrix.suite }}-${{ matrix.arch }}
+            DEB_VERSION=${{ steps.ver.outputs.deb_version }}
+            SUITE=${{ matrix.suite }}
+          outputs: type=local,dest=./out
+          provenance: false
+          cache-from: type=gha,scope=deb-${{ matrix.suite }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=deb-${{ matrix.suite }}-${{ matrix.arch }},mode=max
 
-      - name: Rename artifacts
-        run: |
-          cd out
-          for f in enviroplus-mqtt_*.deb; do
-            mv "$f" "enviroplus-mqtt_${{ steps.ver.outputs.deb_version }}_${{ matrix.suite }}_${{ matrix.arch }}.deb"
-          done
-          ls -la
+      - name: Inspect artifacts
+        run: ls -la out/
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
