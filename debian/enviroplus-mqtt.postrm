@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        if getent passwd enviroplus-mqtt >/dev/null; then
+            deluser --quiet --system enviroplus-mqtt >/dev/null 2>&1 || true
+        fi
+        if getent group enviroplus-mqtt >/dev/null; then
+            delgroup --quiet --system enviroplus-mqtt >/dev/null 2>&1 || true
+        fi
+        rm -rf /opt/venvs/enviroplus-mqtt /etc/enviroplus-mqtt
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+export DH_VIRTUALENV_INSTALL_ROOT=/opt/venvs
+
+%:
+	dh $@ --with python-virtualenv
+
+override_dh_virtualenv:
+	dh_virtualenv \
+	    --python=python3 \
+	    --builtin-venv \
+	    --install-suffix=enviroplus-mqtt \
+	    --upgrade-pip \
+	    --preinstall=wheel \
+	    --preinstall=setuptools \
+	    --extra-pip-arg=--no-cache-dir \
+	    --extras=device
+
+override_dh_installsystemd:
+	dh_installsystemd --name=enviroplus-mqtt --no-enable --no-start

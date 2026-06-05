@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! getent passwd enviroplus-mqtt >/dev/null; then
+            adduser --system --quiet \
+                    --home /nonexistent --no-create-home \
+                    --shell /usr/sbin/nologin \
+                    --group enviroplus-mqtt
+        fi
+
+        # Hardware group memberships. These groups exist on Pi OS;
+        # skip silently on systems where they don't.
+        for grp in i2c spi gpio dialout; do
+            if getent group "$grp" >/dev/null; then
+                adduser --quiet enviroplus-mqtt "$grp" >/dev/null 2>&1 || true
+            fi
+        done
+
+        # Config may contain MQTT credentials. Restrict to root + service user.
+        if [ -f /etc/enviroplus-mqtt/config.toml ]; then
+            chown root:enviroplus-mqtt /etc/enviroplus-mqtt/config.toml
+            chmod 0640 /etc/enviroplus-mqtt/config.toml
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
