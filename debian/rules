@@ -18,3 +18,16 @@ override_dh_virtualenv:
 
 override_dh_installsystemd:
 	dh_installsystemd --name=enviroplus-mqtt --no-enable --no-start
+
+# Skip debug-info and shlibdeps processing on the bundled venv.
+# Pip-installed wheels (PIL, numpy, sdbus, …) ship prebuilt .so files
+# whose ELF section ordering trips dh_strip/dh_dwz, and link against
+# system libs they don't actually use which makes dh_shlibdeps error.
+# The venv's wheel-bundled `.libs/` directories satisfy runtime needs;
+# external runtime deps are declared explicitly in debian/control.
+override_dh_strip:
+
+override_dh_dwz:
+
+override_dh_shlibdeps:
+	dh_shlibdeps -X/opt/venvs/
