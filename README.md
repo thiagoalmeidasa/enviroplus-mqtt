@@ -1,88 +1,69 @@
 # Enviro+ MQTT Logger
 
-`enviroplus-mqtt` is a Python service that publishes environmental data from an [Enviro+](https://shop.pimoroni.com/products/enviro-plus) via MQTT.
+`enviroplus-mqtt` is a Python service that publishes environmental data from an [Enviro+](https://shop.pimoroni.com/products/enviro-plus) via MQTT, with Home Assistant discovery.
 
-## Setting Up Your Device
+## Install on a Raspberry Pi
 
-1) Set up your RPi as you normally would.
-2) Connect the Enviro+ board, and the PMS5003 sensor if you are using one.
-3) Install the Enviro+ library by following the instructions at https://github.com/pimoroni/enviroplus-python/ (make sure the library is installed for Python 3)
-4) Clone this repository to `/usr/src/enviroplus-mqtt`:
+Pre-built `.deb` packages are attached to each [GitHub Release](https://github.com/thiagoalmeidasa/enviroplus-mqtt/releases). Pick the file matching your Pi OS / Debian / Ubuntu release and architecture:
 
-       sudo git clone https://github.com/hotplot/enviroplus-mqtt /usr/src/enviroplus-mqtt
+| File                                                | Target                                      |
+|-----------------------------------------------------|---------------------------------------------|
+| `enviroplus-mqtt_X.Y.Z-1~bookworm_arm64.deb`        | Raspberry Pi OS / Debian bookworm, 64-bit   |
+| `enviroplus-mqtt_X.Y.Z-1~bookworm_armhf.deb`        | Raspberry Pi OS bookworm, 32-bit            |
+| `enviroplus-mqtt_X.Y.Z-1~noble_arm64.deb`           | Ubuntu 24.04, 64-bit                        |
 
-5) Install the package and its hardware extras. Either with `uv`:
+1. Connect the Enviro+ board (and the PMS5003 sensor if you have one).
+2. Download the matching `.deb` from the latest Release, then:
 
-       cd /usr/src/enviroplus-mqtt
-       sudo uv sync --extra device
+       sudo apt install ./enviroplus-mqtt_*.deb
 
-   or with `pipx` (uses the apt-installed hardware libs):
+   The package installs a self-contained venv at `/opt/venvs/enviroplus-mqtt`, creates a system user `enviroplus-mqtt` with access to the `i2c`, `spi`, `gpio`, and `dialout` groups, and ships the systemd unit `enviroplus-mqtt.service` (installed but not enabled).
 
-       sudo pipx install --system-site-packages /usr/src/enviroplus-mqtt
+3. Edit `/etc/enviroplus-mqtt/config.toml` and set at least `host`.
+4. Enable and start the service:
 
-   Both produce an `enviroplus2mqtt` console script.
+       sudo systemctl enable --now enviroplus-mqtt.service
+       journalctl -u enviroplus-mqtt -f
 
-   If the install fails while building `sdbus` (NetworkManager bindings,
-   used by the LCD wifi status), install the headers first:
-   `sudo apt install libsystemd-dev`. Prebuilt wheels exist for common
-   architectures so this is usually not needed.
+Upgrades preserve your edits to `/etc/enviroplus-mqtt/config.toml` (it is a Debian conffile).
 
-6) Add a new file at `/etc/systemd/system/envlogger.service` with the following content:
+## Configuration
 
-       [Unit]
-       Description=Enviro+ MQTT Logger
-       After=network.target
+All settings live in `/etc/enviroplus-mqtt/config.toml`. The CLI accepts only `--config PATH` and the maintenance flag `--remove-config`.
 
-       [Service]
-       ExecStart=/usr/src/enviroplus-mqtt/.venv/bin/enviroplus2mqtt <arguments>
-       WorkingDirectory=/usr/src/enviroplus-mqtt
-       StandardOutput=inherit
-       StandardError=inherit
-       Restart=always
-       User=pi
+```toml
+# /etc/enviroplus-mqtt/config.toml
 
-       [Install]
-       WantedBy=multi-user.target
+host = "broker.local"   # required
+port = 1883
+username = "sensor"     # optional
+password = "..."        # optional
 
-   **Note that you must replace `<arguments>` with flags appropriate to your MQTT server.** If you installed via `pipx`, use `/root/.local/bin/enviroplus2mqtt` (or wherever `pipx list` reports the binary) in place of the `.venv` path.
+prefix = "lounge/enviroplus"
+room = "LivingRoom"
+# client_id defaults to the Pi's serial number
 
-7) Enable and start the service:
+interval = 5            # seconds between published readings
+delay = 15              # warm-up seconds before publishing starts
+use_pms5003 = false     # set true if the PMS5003 PM sensor is attached
+```
 
-       sudo systemctl enable envlogger.service
-       sudo systemctl start envlogger.service
-
-## Supported Arguments
-
-- The MQTT host, port, username, password and client ID can be specified.
-- The update interval can be specified, and defaults to 5 seconds.
-- The initial delay before publishing readings can be specified, and defaults to 15 seconds.
-- If you are using a PMS5003 sensor, enable it by passing the `--use-pms5003` flag.
-
-        usage: enviroplus2mqtt -h HOST [-p PORT] [-U USERNAME] [-P PASSWORD] [--prefix PREFIX]
-                    [--client-id CLIENT_ID] [--interval INTERVAL] [--delay DELAY]
-                    [--use-pms5003] [--help]
-
-        optional arguments:
-        -h HOST, --host HOST  the MQTT host to connect to
-        -p PORT, --port PORT  the port on the MQTT host to connect to
-        -U USERNAME, --username USERNAME
-                            the MQTT username to connect with
-        -P PASSWORD, --password PASSWORD
-                            the password to connect with
-        --prefix PREFIX       the topic prefix to use when publishing readings, i.e.
-                            'lounge/enviroplus'
-        --client-id CLIENT_ID
-                            the MQTT client identifier to use when connecting
-        --interval INTERVAL   the duration in seconds between updates
-        --delay DELAY         the duration in seconds to allow the sensors to
-                            stabilise before starting to publish readings
-        --use-pms5003         if set, PM readings will be taken from the PMS5003
-                            sensor
-        --help                print this help message and exit
+| Key           | Type    | Default                  | Notes                                                     |
+|---------------|---------|--------------------------|-----------------------------------------------------------|
+| `host`        | string  | (required)               | MQTT broker hostname                                      |
+| `port`        | int     | `1883`                   | MQTT broker port                                          |
+| `username`    | string? | unset                    | MQTT username                                             |
+| `password`    | string? | unset                    | MQTT password                                             |
+| `prefix`      | string  | `""`                     | Topic prefix (e.g. `lounge/enviroplus`)                   |
+| `room`        | string  | `"LivingRoom"`           | Room name used in HA discovery                            |
+| `client_id`   | string? | Pi serial number         | MQTT client identifier                                    |
+| `interval`    | int     | `5`                      | Seconds between published readings                        |
+| `delay`       | int     | `15`                     | Sensor warm-up seconds before publishing starts           |
+| `use_pms5003` | bool    | `false`                  | Take PM readings from PMS5003 instead of Enviro+'s gas    |
 
 ## Published Topics
 
-Readings will be published to the following topics:
+Readings publish to:
 
 - `<prefix>/proximity`
 - `<prefix>/lux`
@@ -95,3 +76,30 @@ Readings will be published to the following topics:
 - `<prefix>/particulate/1.0`
 - `<prefix>/particulate/2.5`
 - `<prefix>/particulate/10.0`
+
+## Build from source
+
+For development or non-Debian systems, run directly with `uv`:
+
+    git clone https://github.com/thiagoalmeidasa/enviroplus-mqtt
+    cd enviroplus-mqtt
+    uv sync --extra device
+    uv run enviroplus2mqtt --config ./config.toml
+
+Run the test suite with `uv run pytest`.
+
+To rebuild a `.deb` locally (requires Docker with QEMU support):
+
+    docker run --rm -it --platform linux/arm64 \
+      -v "$PWD:/src:ro" -v "$PWD/out:/out" debian:bookworm-slim \
+      bash -euxo pipefail -c '
+        apt-get update && apt-get install -y --no-install-recommends \
+          build-essential devscripts equivs fakeroot ca-certificates git dpkg-dev
+        cp -a /src /work && cd /work
+        dch -v "0.2.0-1~bookworm-local" -D bookworm --force-distribution "Local build"
+        mk-build-deps --install --remove --tool "apt-get -y --no-install-recommends" debian/control
+        dpkg-buildpackage -us -uc -b
+        cp ../enviroplus-mqtt_*.deb /out/
+      '
+
+The release workflow (`.github/workflows/release-deb.yml`) builds the full matrix on tag push and attaches the artifacts to the GitHub Release.
