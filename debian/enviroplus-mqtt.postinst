@@ -18,6 +18,14 @@ case "$1" in
             fi
         done
 
+        # On first install, seed config.toml from the shipped sample so the
+        # systemd unit has a config to read. Skip on upgrades so user edits
+        # are preserved.
+        if [ ! -e /etc/enviroplus-mqtt/config.toml ] \
+           && [ -f /etc/enviroplus-mqtt/config.toml.sample ]; then
+            cp /etc/enviroplus-mqtt/config.toml.sample \
+               /etc/enviroplus-mqtt/config.toml
+        fi
         # Config may contain MQTT credentials. Restrict to root + service user.
         if [ -f /etc/enviroplus-mqtt/config.toml ]; then
             chown root:enviroplus-mqtt /etc/enviroplus-mqtt/config.toml

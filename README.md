@@ -88,18 +88,40 @@ For development or non-Debian systems, run directly with `uv`:
 
 Run the test suite with `uv run pytest`.
 
-To rebuild a `.deb` locally (requires Docker with QEMU support):
+### Reproducing a CI build locally
+
+CI builds each `.deb` via two Dockerfiles in `packaging/`:
+
+- `packaging/builder.Dockerfile` — installs the heavy build deps (`debhelper`, `dh-virtualenv`, `libsystemd-dev`, `libjpeg-dev`, …) and is published to `ghcr.io/thiagoalmeidasa/enviroplus-mqtt-builder:<suite>-<arch>` by `.github/workflows/builder-image.yml`.
+- `packaging/build.Dockerfile` — runs `dch` + `dpkg-buildpackage` inside the builder image and emits the `.deb` via a `scratch` final stage.
+
+Reproduce a CI build with `buildx`:
+
+    docker login ghcr.io   # one-time; uses a GitHub PAT with read:packages
+
+    docker buildx build \
+      --platform linux/arm64 \
+      --build-arg BUILDER_IMAGE=ghcr.io/thiagoalmeidasa/enviroplus-mqtt-builder:bookworm-arm64 \
+      --build-arg DEB_VERSION=0.2.0-local \
+      --build-arg SUITE=bookworm \
+      --target deb \
+      --output type=local,dest=./out \
+      -f packaging/build.Dockerfile .
+
+The `.deb` lands in `./out/`. Change `--platform`/`BUILDER_IMAGE`/`SUITE` to target a different matrix entry.
+
+For interactive debugging — `docker run` the builder image directly and run the build steps by hand:
 
     docker run --rm -it --platform linux/arm64 \
-      -v "$PWD:/src:ro" -v "$PWD/out:/out" debian:bookworm-slim \
-      bash -euxo pipefail -c '
-        apt-get update && apt-get install -y --no-install-recommends \
-          build-essential devscripts equivs fakeroot ca-certificates git dpkg-dev
-        cp -a /src /work && cd /work
-        dch -v "0.2.0-1~bookworm-local" -D bookworm --force-distribution "Local build"
-        mk-build-deps --install --remove --tool "apt-get -y --no-install-recommends" debian/control
-        dpkg-buildpackage -us -uc -b
-        cp ../enviroplus-mqtt_*.deb /out/
-      '
+      -v "$PWD:/work" \
+      ghcr.io/thiagoalmeidasa/enviroplus-mqtt-builder:bookworm-arm64
 
-The release workflow (`.github/workflows/release-deb.yml`) builds the full matrix on tag push and attaches the artifacts to the GitHub Release.
+To rebuild the builder image yourself (e.g. testing a `debian/control` change before merging):
+
+    docker buildx build --platform linux/arm64 \
+      --build-arg BASE_IMAGE=debian:bookworm-slim \
+      -f packaging/builder.Dockerfile \
+      -t enviroplus-mqtt-builder:bookworm-arm64 \
+      --load .
+
+The release workflow (`.github/workflows/release-deb.yml`) builds the full matrix on tag push and attaches the artifacts to the GitHub Release. On the first run after a `debian/control` change, trigger `builder-image.yml` first (it auto-runs on `master` push when relevant paths change, or via `gh workflow run builder-image.yml`).
