@@ -1,5 +1,11 @@
 name: Release deb
 
+# Builds depend on the prebuilt builder images at
+# ghcr.io/<owner>/enviroplus-mqtt-builder:<suite>-<arch>, produced by
+# .github/workflows/builder-image.yml. If you're cutting a release for
+# the first time after a debian/control change, run that workflow first
+# (push to master or `gh workflow run builder-image.yml`).
+
 on:
   push:
     tags:
@@ -12,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  packages: read
 
 concurrency:
   group: release-deb-${{ github.ref }}
@@ -29,15 +36,12 @@ jobs:
           - suite: bookworm
             arch: arm64
             platform: linux/arm64
-            image: debian:bookworm-slim
           - suite: bookworm
             arch: armhf
             platform: linux/arm/v7
-            image: debian:bookworm-slim
           - suite: noble
             arch: arm64
             platform: linux/arm64
-            image: ubuntu:24.04
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
@@ -56,10 +60,17 @@ jobs:
         with:
           platforms: arm64,arm
 
-      - name: Build .deb inside ${{ matrix.image }}
+      - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build .deb
         env:
           DEB_VERSION: ${{ steps.ver.outputs.deb_version }}
           SUITE: ${{ matrix.suite }}
+          BUILDER_IMAGE: ghcr.io/${{ github.repository_owner }}/enviroplus-mqtt-builder:${{ matrix.suite }}-${{ matrix.arch }}
         run: |
           mkdir -p out
           docker run --rm \
@@ -69,18 +80,17 @@ jobs:
             -e DEB_VERSION \
             -e SUITE \
             -e DEBIAN_FRONTEND=noninteractive \
-            ${{ matrix.image }} \
+            "${BUILDER_IMAGE}" \
             bash -euxo pipefail -c '
-              apt-get update
-              apt-get install -y --no-install-recommends \
-                  build-essential devscripts equivs fakeroot \
-                  ca-certificates git dpkg-dev
               cp -a /src /work
               cd /work
               dch -v "${DEB_VERSION}" -D "${SUITE}" --force-distribution \
                   "Automated build of ${DEB_VERSION}"
+              # Safety belt: install any Build-Deps drifted from the builder image.
               mk-build-deps --install --remove --tool \
-                  "apt-get -y --no-install-recommends" debian/control
+                  "apt-get -y --no-install-recommends" debian/control || \
+                  { apt-get update && mk-build-deps --install --remove --tool \
+                    "apt-get -y --no-install-recommends" debian/control; }
               dpkg-buildpackage -us -uc -b
               cp ../enviroplus-mqtt_*.deb /out/
               cp ../enviroplus-mqtt_*.buildinfo /out/ || true
