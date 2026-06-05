@@ -39,6 +39,9 @@ jobs:
           - suite: bookworm
             arch: armhf
             platform: linux/arm/v7
+            # piwheels publishes prebuilt armv7 wheels for Pi OS, so pip
+            # avoids compiling sdbus/Pillow/numpy under QEMU emulation.
+            pip_extra_index_url: https://www.piwheels.org/simple
           - suite: noble
             arch: arm64
             platform: linux/arm64
@@ -79,6 +82,7 @@ jobs:
             BUILDER_IMAGE=ghcr.io/${{ github.repository_owner }}/enviroplus-mqtt-builder:${{ matrix.suite }}-${{ matrix.arch }}
             DEB_VERSION=${{ steps.ver.outputs.deb_version }}
             SUITE=${{ matrix.suite }}
+            PIP_EXTRA_INDEX_URL=${{ matrix.pip_extra_index_url || '' }}
           outputs: type=local,dest=./out
           provenance: false
           cache-from: type=gha,scope=deb-${{ matrix.suite }}-${{ matrix.arch }}

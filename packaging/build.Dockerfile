@@ -3,7 +3,12 @@ ARG BUILDER_IMAGE
 FROM ${BUILDER_IMAGE} AS build
 ARG DEB_VERSION
 ARG SUITE
+# Optional extra PyPI index for pip (set to https://www.piwheels.org/simple
+# for armhf so prebuilt wheels are used instead of compiling under QEMU).
+# Empty by default — pip ignores an empty PIP_EXTRA_INDEX_URL.
+ARG PIP_EXTRA_INDEX_URL=""
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL}
 WORKDIR /work
 COPY . .
 RUN dch -v "${DEB_VERSION}" -D "${SUITE}" --force-distribution \
