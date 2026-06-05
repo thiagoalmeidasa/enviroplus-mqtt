@@ -1,18 +1,28 @@
 import threading
 import traceback
 from subprocess import PIPE, Popen
+from typing import Any
 
 from bme280 import BME280
 from enviroplus import gas
 from pms5003 import PMS5003
 
-try:
-    # Newer LTR559 ships a class; older versions exposed a module-level API
-    from ltr559 import LTR559
 
-    ltr559 = LTR559()
-except ImportError:
-    import ltr559  # type: ignore[no-redef]
+def _open_ltr559() -> Any:
+    """Return an object exposing get_proximity/get_lux.
+
+    Newer ltr559 ships a class whose constructor probes I2C; older versions
+    exposed a module-level API. Try the class first and fall back to the
+    module, deferring hardware access until a SensorReader is constructed.
+    """
+    try:
+        from ltr559 import LTR559
+
+        return LTR559()
+    except ImportError:
+        import ltr559
+
+        return ltr559
 
 
 class SensorReader:
@@ -20,6 +30,7 @@ class SensorReader:
 
     def __init__(self, use_pms5003: bool = False):
         self.bme280 = BME280()
+        self.ltr559 = _open_ltr559()
         self.use_pms5003 = use_pms5003
         self.latest_pms_readings: dict = {}
 
@@ -48,8 +59,8 @@ class SensorReader:
         gas_data = gas.read_all()
 
         readings = {
-            "proximity": ltr559.get_proximity(),
-            "lux": int(ltr559.get_lux()),
+            "proximity": self.ltr559.get_proximity(),
+            "lux": int(self.ltr559.get_lux()),
             "temperature": round(comp_temp, 1),
             "pressure": round(int(self.bme280.get_pressure() * 100), -1),
             "humidity": round(int(self.bme280.get_humidity() * hum_comp_factor), 1),
