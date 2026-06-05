@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 license = { file = "LICENSE" }
 dependencies = [
     "paho-mqtt",
+    "tomli; python_version < '3.11'",
 ]
 
 [project.scripts]

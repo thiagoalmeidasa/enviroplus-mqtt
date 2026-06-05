@@ -219,6 +219,7 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "paho-mqtt" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 
 [package.optional-dependencies]
@@ -258,6 +259,7 @@ requires-dist = [
     { name = "sdbus", marker = "extra == 'device'" },
     { name = "sdbus-networkmanager", marker = "extra == 'device'" },
     { name = "st7735", marker = "extra == 'device'" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 provides-extras = ["device"]
 
