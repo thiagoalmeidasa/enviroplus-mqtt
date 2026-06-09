@@ -10,6 +10,8 @@ Pre-built `.deb` packages are attached to each [GitHub Release](https://github.c
 |-----------------------------------------------------|---------------------------------------------|
 | `enviroplus-mqtt_X.Y.Z-1~bookworm_arm64.deb`        | Raspberry Pi OS / Debian bookworm, 64-bit   |
 | `enviroplus-mqtt_X.Y.Z-1~bookworm_armhf.deb`        | Raspberry Pi OS bookworm, 32-bit            |
+| `enviroplus-mqtt_X.Y.Z-1~trixie_arm64.deb`          | Raspberry Pi OS / Debian trixie, 64-bit     |
+| `enviroplus-mqtt_X.Y.Z-1~trixie_armhf.deb`          | Raspberry Pi OS trixie, 32-bit              |
 | `enviroplus-mqtt_X.Y.Z-1~noble_arm64.deb`           | Ubuntu 24.04, 64-bit                        |
 
 1. Connect the Enviro+ board (and the PMS5003 sensor if you have one).
