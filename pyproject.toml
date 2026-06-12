@@ -41,7 +41,7 @@ dev = [
     "pytest-mock>=3.12",
     "pyright>=1.1.380",
     "mypy>=1.10",
-    "ruff>=0.15.16",
+    "ruff>=0.15.17",
     "pre-commit>=3.7",
 ]
 
