@@ -37,11 +37,11 @@ device = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8",
+    "pytest>=9.1.1",
     "pytest-mock>=3.12",
-    "pyright>=1.1.380",
+    "pyright>=1.1.411",
     "mypy>=1.10",
-    "ruff>=0.15.16",
+    "ruff>=0.15.20",
     "pre-commit>=3.7",
 ]
 
