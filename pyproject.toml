@@ -37,12 +37,12 @@ device = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8",
+    "pytest>=9.1.1",
     "pytest-mock>=3.12",
-    "pyright>=1.1.380",
-    "mypy>=1.10",
-    "ruff>=0.15.16",
-    "pre-commit>=3.7",
+    "pyright>=1.1.411",
+    "mypy>=2.3.0",
+    "ruff>=0.16.0",
+    "pre-commit>=4.6.1",
 ]
 
 [tool.hatch.build.targets.wheel]
